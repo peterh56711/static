@@ -4,22 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Topographic Map with Elevation Profile</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Include Leaflet CSS for the map -->
+    <!-- Leaflet CSS for map styling -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <!-- Include Chart.js for plotting the elevation profile -->
+    <!-- Include Chart.js for rendering elevation profile -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Ensure the map has a height */
+        #map {
+            height: 500px;  /* Adjust height as needed */
+            width: 100%;
+        }
+
+        /* Style for elevation profile canvas */
+        #elevationProfileContainer {
+            height: 300px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
 
-    <div id="map" style="height: 500px;"></div>  <!-- Map container -->
+    <!-- Map container -->
+    <div id="map"></div>
 
-    <!-- Canvas for the elevation profile chart -->
-    <div style="height: 300px;">
+    <!-- Container for the elevation profile chart -->
+    <div id="elevationProfileContainer">
         <canvas id="elevationProfile"></canvas>
     </div>
 
     <!-- Include the JavaScript file for functionality -->
-    <script src="script.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        // Add OpenTopoMap as the base layer
+        L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenTopoMap contributors'
+        }).addTo(map);
+
+        // Initialize Leaflet Draw control
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polyline: true,  // Allow polyline drawing (line)
+                polygon: false,
+                circle: false,
+                rectangle: false,
+                marker: false
+            }
+        });
+        map.addControl(drawControl);
+
+        // Event listener for drawing completion
+        map.on('draw:created', function(e) {
+            var layer = e.layer;
+            map.addLayer(layer);  // Add the drawn line to the map
+
+            // Extract coordinates from the drawn polyline
+            var latlngs = layer.getLatLngs();
+            var coordinates = latlngs.map(function(latlng) {
+                return [latlng.lat, latlng.lng];
+            });
+
+            // Fetch elevation data from OpenElevation API
+            fetch('https://api.open-elevation.com/api/v1/lookup?locations=' + coordinates.map(function(coord) {
+                return coord.join(',');
+            }).join('|'))
+                .then(response => response.json())
+                .then(data => {
+                    var elevations = data.results.map(function(result) {
+                        return result.elevation;
+                    });
+                    plotElevationProfile(elevations);  // Plot the elevation profile
+                })
+                .catch(err => console.error('Error fetching elevation data:', err));
+        });
+
+        // Function to plot elevation profile using Chart.js
+        function plotElevationProfile(elevations) {
+            var ctx = document.getElementById('elevationProfile').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: elevations.map(function(_, index) {
+                        return index + 1;  // X-axis labels representing segments
+                    }),
+                    datasets: [{
+                        label: 'Elevation (m)',
+                        data: elevations,
+                        fill: false,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Distance (Segment)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Elevation (meters)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
