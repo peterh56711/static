@@ -3,13 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Topographic Map</title>
+    <title>Topographic Map with Elevation Profile</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Include Leaflet CSS for the map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Include Chart.js for plotting the elevation profile -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Welcome to My Topographic Map Website</h1>
-    <div id="map" style="height: 500px;"></div>
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <div id="map" style="height: 500px;"></div>  <!-- Map container -->
+
+    <!-- Canvas for the elevation profile chart -->
+    <div style="height: 300px;">
+        <canvas id="elevationProfile"></canvas>
+    </div>
+
+    <!-- Include the JavaScript file for functionality -->
     <script src="script.js"></script>
 </body>
 </html>
